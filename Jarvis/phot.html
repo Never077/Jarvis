@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Gallery</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        #controls {
+            margin-bottom: 20px;
+        }
+        
+        #gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .image-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .image-container img {
+            max-width: 150px;
+            max-height: 150px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .image-container img:hover {
+            transform: scale(1.1);
+        }
+        
+        .delete-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        #fullscreenOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #fullscreenOverlay img {
+            max-width: 90%;
+            max-height: 90%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="controls">
+        <input type="file" id="fileInput" multiple>
+        <button id="shuffleButton">Перемешать</button>
+        <button id="clearButton">Удалить все</button>
+        <label for="resizeSlider">Размер:</label>
+        <input type="range" id="resizeSlider" min="50" max="300" value="150">
+    </div>
+    <div id="gallery"></div>
+    <div id="fullscreenOverlay">
+        <img id="fullscreenImage" src="" alt="Fullscreen Image">
+    </div>
+
+    <script>
+        const gallery = document.getElementById('gallery');
+        const resizeSlider = document.getElementById('resizeSlider');
+        const fullscreenOverlay = document.getElementById('fullscreenOverlay');
+        const fullscreenImage = document.getElementById('fullscreenImage');
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const files = event.target.files;
+            Array.from(files).forEach(file => {
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        addImageToGallery(e.target.result);
+                        saveImageToLocalStorage(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+
+        function addImageToGallery(src) {
+            const container = document.createElement('div');
+            container.className = 'image-container';
+            container.draggable = true;
+            container.addEventListener('dragstart', handleDragStart);
+            container.addEventListener('dragover', handleDragOver);
+            container.addEventListener('drop', handleDrop);
+
+            const img = document.createElement('img');
+            img.src = src;
+            img.addEventListener('click', () => showFullscreen(img.src));
+
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-button';
+            deleteButton.innerText = '×';
+            deleteButton.addEventListener('click', () => removeImage(container, src));
+
+            container.appendChild(img);
+            container.appendChild(deleteButton);
+            gallery.appendChild(container);
+        }
+
+        function handleDragStart(event) {
+            event.dataTransfer.setData('text/plain', event.target.outerHTML);
+            event.dataTransfer.effectAllowed = 'move';
+            event.target.classList.add('dragging');
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            const draggingElement = gallery.querySelector('.dragging');
+            if (draggingElement) {
+                draggingElement.classList.remove('dragging');
+                const dropHTML = event.dataTransfer.getData('text/plain');
+                const dropElement = document.createElement('div');
+                dropElement.innerHTML = dropHTML;
+                gallery.insertBefore(dropElement.firstChild, event.target.closest('.image-container'));
+                updateLocalStorage();
+            }
+        }
+
+        function removeImage(container, src) {
+            container.remove();
+            let images = JSON.parse(localStorage.getItem('images')) || [];
+            images = images.filter(image => image !== src);
+            localStorage.setItem('images', JSON.stringify(images));
+        }
+
+        function saveImageToLocalStorage(dataUrl) {
+            let images = JSON.parse(localStorage.getItem('images')) || [];
+            images.push(dataUrl);
+            localStorage.setItem('images', JSON.stringify(images));
+        }
+
+        function loadImagesFromLocalStorage() {
+            const images = JSON.parse(localStorage.getItem('images')) || [];
+            gallery.innerHTML = '';
+            images.forEach(dataUrl => {
+                addImageToGallery(dataUrl);
+            });
+        }
+
+        function shuffleImages() {
+            const images = JSON.parse(localStorage.getItem('images')) || [];
+            for (let i = images.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [images[i], images[j]] = [images[j], images[i]];
+            }
+            localStorage.setItem('images', JSON.stringify(images));
+            loadImagesFromLocalStorage();
+        }
+
+        function clearImages() {
+            localStorage.removeItem('images');
+            loadImagesFromLocalStorage();
+        }
+
+        function showFullscreen(src) {
+            fullscreenImage.src = src;
+            fullscreenOverlay.style.display = 'flex';
+        }
+
+        fullscreenOverlay.addEventListener('click', () => {
+            fullscreenOverlay.style.display = 'none';
+        });
+
+        resizeSlider.addEventListener('input', function() {
+            const size = resizeSlider.value;
+            const images = gallery.getElementsByClassName('image-container');
+            Array.from(images).forEach(container => {
+                const img = container.querySelector('img');
+                img.style.maxWidth = size + 'px';
+                img.style.maxHeight = size + 'px';
+            });
+        });
+
+        function updateLocalStorage() {
+            const images = Array.from(gallery.getElementsByTagName('img')).map(img => img.src);
+            localStorage.setItem('images', JSON.stringify(images));
+        }
+
+        document.addEventListener('DOMContentLoaded', loadImagesFromLocalStorage);
+        document.getElementById('shuffleButton').addEventListener('click', shuffleImages);
+        document.getElementById('clearButton').addEventListener('click', clearImages);
+    </script>
+</body>
+
+</html>

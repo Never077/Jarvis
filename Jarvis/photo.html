@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Главная страница 2467 года</title>
+    <link rel="stylesheet" href="css/photo.css">
+
+</head>
+
+<body>
+
+    <header>
+        <h1>Фото</h1>
+
+    </header>
+
+    <nav>
+        <a href="index.html">Главная</a>
+        <a href="photo.html">Фото</a>
+        <a href="music.html">Аудио</a>
+        <a href="video.html">видео</a>
+    </nav>
+    </header>
+
+    <div class="gallery">
+        <div class="gallery-item">
+            <img src="images/photo1.jpg" alt="Фотография 1" onclick="openModal(this)">
+        </div>
+        <div class="gallery-item">
+            <img src="images/photo2.jpg" alt="Фотография 2" onclick="openModal(this)">
+        </div>
+        <div class="gallery-item">
+            <img src="images/photo3.jpg" alt="Фотография 3" onclick="openModal(this)">
+        </div>
+        <div class="gallery-item">
+            <img src="images/photo4.jpg" alt="Фотография 4" onclick="openModal(this)">
+        </div>
+    </div>
+
+    <!-- Модальное окно для увеличения фотографий -->
+    <div id="modal" class="modal">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="modalImg">
+    </div>
+
+    <footer>
+        <p>&copy; 2467 Все права защищены. Джарвис — будущее уже здесь.</p>
+    </footer>
+
+    <script>
+        function openModal(img) {
+            var modal = document.getElementById("modal");
+            var modalImg = document.getElementById("modalImg");
+            modal.style.display = "block";
+            modalImg.src = img.src;
+        }
+
+        function closeModal() {
+            var modal = document.getElementById("modal");
+            modal.style.display = "none";
+        }
+    </script>
+
+</body>
+
+</html>
